@@ -546,10 +546,8 @@ def cmd_qa(args: argparse.Namespace) -> None:
                 high_cps_short.append(rec)
 
         punct_hits = []
-        if "，" in zh:
-            punct_hits.append("全形逗號(，)")
-        if "。" in zh:
-            punct_hits.append("全形句號(。)")
+        if "\u3000" in zh:
+            punct_hits.append("全形空格(　)")
         if "," in zh:
             punct_hits.append("半形逗號(,)")
         if HALF_PERIOD_RE.search(zh):
@@ -562,6 +560,14 @@ def cmd_qa(args: argparse.Namespace) -> None:
             punct_hits.append("刪節號非兩格")
         if any(m.group(0) != "——" for m in re.finditer(r"—+", zh)):
             punct_hits.append("破折號非兩格")
+        for line in lines:
+            body = line[2:] if line.startswith("- ") else line
+            if re.search(r"[\u4e00-\u9fff] [\u4e00-\u9fff]", body):
+                punct_hits.append("中文字間多餘空格")
+            if not (body.startswith("♪ ") and body.endswith(" ♪")):
+                if re.search(r"[？！……——，。、：「」] | [？！……——，。、：「」]", body):
+                    punct_hits.append("中文標點旁多餘空格")
+        punct_hits = list(dict.fromkeys(punct_hits))
         if punct_hits:
             forbidden_punct.append(
                 {"chunk": cname, "id": sub_id, "hits": punct_hits, "zh": zh}
@@ -620,7 +626,7 @@ def cmd_qa(args: argparse.Namespace) -> None:
         f"| 單條超過 2 行 | 必改 | {len(over_2_lines)} |",
         f"| 單行超過 18 全形字 | 必改 | {len(line_over_18)} |",
         f"| 雙人對話未換行（`- A - B`） | 必改 | {len(inline_dual)} |",
-        f"| 禁忌標點（，。,. 等） | 必改 | {len(forbidden_punct)} |",
+        f"| 不當空格／半形標點（　、標點旁空白、,.） | 必改 | {len(forbidden_punct)} |",
         f"| 簡體字殘留 | 必改 | {len(simplified_issues)} |",
         f"| 大陸用語殘留 | 必改 | {len(mainland_term_issues)} |",
         f"| 單行 17～18 全形字 | 警告 | {len(line_17_18)} |",
@@ -681,9 +687,9 @@ def cmd_qa(args: argparse.Namespace) -> None:
         ],
     )
     add_section(
-        "6. 禁忌標點、簡體字與大陸用語明細",
+        "6. 不當空格／半形標點、簡體字與大陸用語明細",
         [
-            f"- [禁忌標點-必改] `{x['chunk']}` ID `{x['id']}` ({', '.join(x['hits'])})：`{x['zh'].replace(chr(10), ' / ')}`"
+            f"- [標點／空格-必改] `{x['chunk']}` ID `{x['id']}` ({', '.join(x['hits'])})：`{x['zh'].replace(chr(10), ' / ')}`"
             for x in forbidden_punct
         ]
         + [
