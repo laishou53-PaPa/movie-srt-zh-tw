@@ -564,6 +564,12 @@ def cmd_qa(args: argparse.Namespace) -> None:
             body = line[2:] if line.startswith("- ") else line
             if re.search(r"[\u4e00-\u9fff] [\u4e00-\u9fff]", body):
                 punct_hits.append("中文字間多餘空格")
+            if re.search(
+                r"[\u4e00-\u9fff「」『』《》（）【】？！，。、：；] +[A-Za-z0-9%]"
+                r"|[A-Za-z0-9%] +[\u4e00-\u9fff「」『』《》（）【】？！，。、：；]",
+                body,
+            ):
+                punct_hits.append("中英數字間多餘空格")
             if not (body.startswith("♪ ") and body.endswith(" ♪")):
                 if re.search(r"[？！……——，。、：「」] | [？！……——，。、：「」]", body):
                     punct_hits.append("中文標點旁多餘空格")
@@ -626,7 +632,7 @@ def cmd_qa(args: argparse.Namespace) -> None:
         f"| 單條超過 2 行 | 必改 | {len(over_2_lines)} |",
         f"| 單行超過 18 全形字 | 必改 | {len(line_over_18)} |",
         f"| 雙人對話未換行（`- A - B`） | 必改 | {len(inline_dual)} |",
-        f"| 不當空格／半形標點（　、標點旁空白、,.） | 必改 | {len(forbidden_punct)} |",
+        f"| 不當空格／半形標點（　、中英數空格、,.） | 必改 | {len(forbidden_punct)} |",
         f"| 簡體字殘留 | 必改 | {len(simplified_issues)} |",
         f"| 大陸用語殘留 | 必改 | {len(mainland_term_issues)} |",
         f"| 單行 17～18 全形字 | 警告 | {len(line_17_18)} |",

@@ -68,8 +68,8 @@ Read [localization_rules.md](./references/localization_rules.md) to ensure every
    - Instruct each subagent to:
      - Read chunks in ascending order, reading 3–5 cues ahead (including `next_context`) and reconstructing natural Taiwanese Mandarin word order proportional to `duration`.
      - Update **only** the `"zh"` field in each chunk JSON (never alter `id`, `timecode`, `duration`, `en`, `prev_context`, `next_context`).
-     - Apply contextual Chinese punctuation automatically (`，`、`、`、`：`、`。`、`？`、`！` — never use `\u3000` fullwidth spaces for pauses, keep line ends/breaks free of trailing `。`, preserve halfwidth spaces between Chinese and English/digits like `歡迎收聽 ABC 音訊的`, and leave no stray spaces adjacent to Chinese punctuation).
-     - Self-verify its assigned chunks with Python before finishing (0 empty `zh`, 0 `<i>`, 0 `\u3000`, 0 stray spaces near Chinese punctuation, 0 halfwidth `,`/non-decimal `.`/`..`/`--`, ≤ 2 lines, ≤ 16 fullwidth target / 0 > 18, CPS ≤ 13, 0 Simplified/Mainland terms).
+     - Apply contextual Chinese punctuation automatically (`，`、`、`、`：`、`。`、`？`、`！` — never use `\u3000` fullwidth spaces for pauses, keep line ends/breaks free of trailing `。`, omit halfwidth spaces between Chinese and English/digits like `歡迎收聽ABC音訊的` and `120奈米`, and leave no stray spaces adjacent to Chinese punctuation).
+     - Self-verify its assigned chunks with Python before finishing (0 empty `zh`, 0 `<i>`, 0 `\u3000`, 0 CN/EN/digit spaces, 0 stray spaces near Chinese punctuation, 0 halfwidth `,`/non-decimal `.`/`..`/`--`, ≤ 2 lines, ≤ 16 fullwidth target / 0 > 18, CPS ≤ 13, 0 Simplified/Mainland terms).
    - Do not poll; wait for all batches to complete.
 
 ---
@@ -86,10 +86,10 @@ Read [localization_rules.md](./references/localization_rules.md) to ensure every
    - Also run a quick check across all chunks for:
      - Cross-batch boundary continuity (last 3 / first 3 cues at every batch seam).
      - Pronoun consistency (`你` vs. `妳` vs. `您` — watch for misgendered `妳` on off-screen speakers).
-     - `residual_en` tokens (confirm every remaining ASCII token is an intentional brand/acronym like `AI`, `Wi-Fi`, `YouTube`, `Netflix`, `Hulu`; translate accidental English like `Email` if appropriate, while preserving CN/EN spaces).
+     - `residual_en` tokens (confirm every remaining ASCII token is an intentional brand/acronym like `AI`, `Wi-Fi`, `YouTube`, `Netflix`, `Hulu`; translate accidental English like `Email` if appropriate, and ensure no halfwidth spaces surround them in Chinese sentences).
      - Split compound words across line breaks.
    - Fix any issues directly in `./chunks/chunk_XX.json` automatically (do NOT pause to ask the user for line-by-line review), then re-run `merge` and `qa` until:
-     - **Critical errors = `0`** (100% 1-to-1 `id` + `timecode` match, 0 empty, 0 HTML, 0 >2 lines, 0 >18 fullwidth, 0 `\u3000`/stray punct spaces/halfwidth punct, 0 Simplified/Mainland terms).
+     - **Critical errors = `0`** (100% 1-to-1 `id` + `timecode` match, 0 empty, 0 HTML, 0 >2 lines, 0 >18 fullwidth, 0 `\u3000`/CN-EN-digit spaces/stray punct spaces/halfwidth punct, 0 Simplified/Mainland terms).
      - **17–18 fullwidth warnings = `0`** (target ≤ 16 fullwidth units everywhere).
      - **CPS > 13 (`>= 1.0s`) = `0`** (and minimize `< 1.0s` cues).
 3. **Verify Timeline & Cleanup:**
